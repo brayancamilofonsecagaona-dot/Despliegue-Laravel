@@ -16,6 +16,12 @@
         <h1>Área privada</h1>
         <p>¡Bienvenido, <strong>{{ auth()->user()->name }}</strong>!</p>
         <p>Has iniciado sesión con el correo: {{ auth()->user()->email }}</p>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                Cerrar sesión
+            </button>
+        </form>
     </div>
 </body>
 </html>

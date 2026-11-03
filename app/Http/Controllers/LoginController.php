@@ -28,5 +28,9 @@ class LoginController extends Controller
         return back()->withErrors(['credenciales' => 'Correo o contraseña incorrectos'])->onlyInput('email');
     }
     }
+    public function logout() {
+        Auth::logout();
+        return redirect('/login');
+    }
 }
 
