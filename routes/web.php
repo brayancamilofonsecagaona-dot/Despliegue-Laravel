@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\RegisterController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\RecuperacionController;
 use App\Http\Controllers\LoginController;
 
 Route::get('/', function () {
@@ -21,3 +22,7 @@ Route::post('/logout',[LoginController::class,'logout'])->name('logout');
 //CA 2.5 y 2.6: Ruta privada y protegida
 Route::get('/privada', function(){
     return view ('privada');})-> middleware('auth'); //filtro de seguridad
+Route::get('/recuperacion', function() {
+    return view('recuperacion');
+})->name('password.request');
+Route::post('/recuperacion', [RecuperacionController::class, 'sendResetLinkEmail'])->name('password.email');

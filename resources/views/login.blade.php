@@ -39,6 +39,7 @@
             @error('password') <div class="error">{{ $message }}</div> @enderror
 
             <button type="submit">Iniciar sesion</button>
+            <small><a href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a></small>
         </form>
     </div>
 </body>
