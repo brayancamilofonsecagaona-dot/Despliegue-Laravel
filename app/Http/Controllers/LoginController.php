@@ -24,10 +24,11 @@ class LoginController extends Controller
         return redirect()->intended('/privada');
 
          }else{
-    
+    //invalidacion de toques si falla el login y redirigir al login con mensaje de error
         return back()->withErrors(['credenciales' => 'Correo o contraseña incorrectos'])->onlyInput('email');
     }
     }
+    //Funcion para cerrar sesion y redirigir al login
     public function logout() {
         Auth::logout();
         return redirect('/login');
