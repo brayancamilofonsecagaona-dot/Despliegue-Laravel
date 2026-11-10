@@ -26,3 +26,5 @@ Route::get('/recuperacion', function() {
     return view('recuperacion');
 })->name('password.request');
 Route::post('/recuperacion', [RecuperacionController::class, 'sendResetLinkEmail'])->name('password.email');
+
+

@@ -3,35 +3,46 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\User; 
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use Carbon\Carbon;
 
 class RecuperacionController extends Controller
 {
-
     public function create()
     {
         return view('recuperacion');
     }
 
-
     public function sendResetLinkEmail(Request $request)
     {
-        // 1. Validamos los campos. Esto genera automáticamente excepciones que el test puede capturar
+        // CA-03.1: Validar formato de correo
         $request->validate([
             'email' => ['required', 'email'],
         ]);
 
-        // 2. Opcional para testing riguroso: Verificar si el correo realmente existe en tu Postgres
-        $userExists = User::where('email', $request->email)->exists();
+        $user = User::where('email', $request->email)->first();
 
-        if (!$userExists) {
-            // Retorna un error de validación testeable mediante assertSessionHasErrors
-            return back()->withErrors([
-                'email' => 'No encontramos ningún usuario con ese correo electrónico.'
-            ])->onlyInput('email');
+        // CA-03.3: Si la cuenta existe, creamos el token seguro
+        if ($user) {
+            $token = Str::random(60);
+
+            // Guardamos el token en la tabla nativa de Laravel para restablecer contraseñas
+            DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $user->email],
+                [
+                    'token' => bcrypt($token),
+                    'created_at' => Carbon::now() // Esto servirá para la expiración de 30 min (CA-03.4)
+                ]
+            );
+
+            // Aquí enviarías el correo usando un Mailable de Laravel
+            // Mail::to($user->email)->send(new ResetPasswordNotification($token));
         }
 
-        // 3. Simulamos el éxito guardando el mensaje en la sesión de forma estructurada
-        return back()->with('status', '¡Te hemos enviado por correo el enlace para restablecer tu contraseña!');
+        // CA-03.2: RESPUESTA GENÉRICA (Siempre dice que se envió, exista o no el usuario)
+        return back()->with('status', 'Si el correo electrónico coincide con una cuenta registrada, recibirás un enlace para restablecer tu contraseña.');
     }
 }
