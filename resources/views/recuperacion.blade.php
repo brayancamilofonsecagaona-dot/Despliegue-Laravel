@@ -27,7 +27,7 @@
            <div class="error">{{ $message }}</div>
         @enderror
 
-        <form method="POST" action="{{ route('password.email') }}" novalidate>
+        <form method="POST" action="/update-password" novalidate>
             @csrf
 
             <label for="email">Correo electrónico</label>
