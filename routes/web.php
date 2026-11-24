@@ -31,5 +31,9 @@ Route::get('/reset-password/{token}', [RecuperacionController::class, 'showReset
 Route::post('/update-password', [RecuperacionController::class, 'updatePassword'])->name('password.update');
 
 Route::middleware('auth')->group(function () {
+    Route::middleware('auth')->group(function () {
+    Route::get('tareas/calendario', [TareaController::class, 'calendario'])->name('tareas.calendario');
+    Route::resource('tareas', TareaController::class)->except('show');
+    });
     Route::resource('tareas', TareaController::class)->except('show');
 });

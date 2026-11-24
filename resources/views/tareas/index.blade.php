@@ -4,6 +4,7 @@
     <h1>Mis tareas</h1>
     <a href="{{ route('tareas.create') }}" class="btn">Nueva tarea</a>
     <a href="/privada">Volver</a>
+    <a href="{{ route('tareas.calendario') }}">Ver calendario</a>
 
     @forelse ($tareas as $tarea)
         <div class="item">
