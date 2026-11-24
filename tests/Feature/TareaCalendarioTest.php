@@ -58,13 +58,29 @@ class TareaCalendarioTest extends TestCase
             ->assertDontSee('Tarea ajena');
     }
 
-    public function test_avisa_cuantas_tareas_no_tienen_fecha(): void
+    public function test_las_tareas_sin_fecha_aparecen_en_el_panel_lateral(): void
     {
         $yo = User::factory()->create();
-        Tarea::factory()->for($yo)->count(2)->create(['fecha_limite' => null]);
+        Tarea::factory()->for($yo)->create(['titulo' => 'Sin fecha uno', 'fecha_limite' => null]);
 
         $this->actingAs($yo)->get(route('tareas.calendario', ['mes' => '2026-12']))
-            ->assertSee('2 tarea(s) sin fecha límite');
+            ->assertSee('Sin fecha uno');
+    }
+
+    public function test_la_pagina_de_tareas_muestra_calendario_y_panel_a_la_vez(): void
+    {
+        $yo = User::factory()->create();
+        Tarea::factory()->for($yo)->create([
+            'titulo' => 'Tarea del mes',
+            'fecha_limite' => now()->startOfMonth()->addDays(2),
+        ]);
+
+        $this->actingAs($yo)->get(route('tareas.index'))
+            ->assertOk()
+            ->assertSee(ucfirst(now()->locale('es')->translatedFormat('F Y')))
+            ->assertSee('Lun')
+            ->assertSee('Nueva tarea')
+            ->assertSee('Tarea del mes');
     }
 
     public function test_un_mes_invalido_usa_el_mes_actual(): void

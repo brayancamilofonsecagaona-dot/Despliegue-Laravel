@@ -11,9 +11,50 @@ class TareaController extends Controller
 {
     public function index(Request $request)
     {
-        $tareas = $request->user()->tareas()->latest()->get();
+        $mes = $this->mesSolicitado($request->query('mes'));
+        $usuario = $request->user();
 
-        return view('tareas.index', compact('tareas'));
+        $delMes = $usuario->tareas()
+            ->whereBetween('fecha_limite', [$mes->copy()->startOfMonth(), $mes->copy()->endOfMonth()])
+            ->orderBy('fecha_limite')
+            ->orderBy('titulo')
+            ->get();
+
+        $sinFecha = $usuario->tareas()->whereNull('fecha_limite')->latest()->get();
+        $porDia = $delMes->groupBy(fn ($tarea) => $tarea->fecha_limite->toDateString());
+
+        $dia = $mes->copy()->startOfMonth()->startOfWeek(Carbon::MONDAY);
+        $fin = $mes->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
+
+        $semanas = [];
+        while ($dia->lte($fin)) {
+            $semana = [];
+            for ($i = 0; $i < 7; $i++) {
+                $semana[] = [
+                    'fecha' => $dia->copy(),
+                    'delMes' => $dia->month === $mes->month,
+                    'tareas' => $porDia->get($dia->toDateString(), collect()),
+                ];
+                $dia->addDay();
+            }
+            $semanas[] = $semana;
+        }
+
+        return view('tareas.index', [
+            'etiquetaMes' => ucfirst($mes->copy()->locale('es')->translatedFormat('F Y')),
+            'semanas' => $semanas,
+            'delMes' => $delMes,
+            'sinFecha' => $sinFecha,
+            'total' => $usuario->tareas()->count(),
+            'anterior' => $mes->copy()->subMonth()->format('Y-m'),
+            'siguiente' => $mes->copy()->addMonth()->format('Y-m'),
+        ]);
+    }
+
+    // Se mantiene la ruta /tareas/calendario, pero muestra la misma página
+    public function calendario(Request $request)
+    {
+        return $this->index($request);
     }
 
     public function create()
@@ -51,41 +92,6 @@ class TareaController extends Controller
         return redirect()->route('tareas.index')->with('status', 'Tarea eliminada con éxito.');
     }
 
-        public function calendario(Request $request)
-    {
-        $mes = $this->mesSolicitado($request->query('mes'));
-
-        $tareas = $request->user()->tareas()
-            ->whereBetween('fecha_limite', [$mes->copy()->startOfMonth(), $mes->copy()->endOfMonth()])
-            ->orderBy('titulo')
-            ->get()
-            ->groupBy(fn ($tarea) => $tarea->fecha_limite->toDateString());
-
-        $dia = $mes->copy()->startOfMonth()->startOfWeek(Carbon::MONDAY);
-        $fin = $mes->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
-
-        $semanas = [];
-        while ($dia->lte($fin)) {
-            $semana = [];
-            for ($i = 0; $i < 7; $i++) {
-                $semana[] = [
-                    'fecha' => $dia->copy(),
-                    'delMes' => $dia->month === $mes->month,
-                    'tareas' => $tareas->get($dia->toDateString(), collect()),
-                ];
-                $dia->addDay();
-            }
-            $semanas[] = $semana;
-        }
-
-        return view('tareas.calendario', [
-            'mes' => $mes,
-            'semanas' => $semanas,
-            'anterior' => $mes->copy()->subMonth()->format('Y-m'),
-            'siguiente' => $mes->copy()->addMonth()->format('Y-m'),
-            'sinFecha' => $request->user()->tareas()->whereNull('fecha_limite')->count(),
-        ]);
-    }
 
     // Acepta solo meses con formato AAAA-MM; si no es válido, usa el mes actual
     private function mesSolicitado(?string $valor): Carbon
