@@ -13,6 +13,7 @@
         .error { color: #b91c1c; font-size: .85rem; margin-top: 4px; }
         .success { background: #dcfce7; color: #166534; padding: 10px; border-radius: 6px; margin-bottom: 12px; }
         button { margin-top: 20px; width: 100%; padding: 10px; background: #111; color: #fff; border: 0; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+        small { color: #666; }
     </style>
 </head>
 <body>
@@ -32,6 +33,8 @@
 
             <button type="submit">Enviar enlace de recuperación</button>
         </form>
+
+        <p><small><a href="{{ route('login') }}">Volver a iniciar sesión</a></small></p>
     </div>
 </body>
 </html>

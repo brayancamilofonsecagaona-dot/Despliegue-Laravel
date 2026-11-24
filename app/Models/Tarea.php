@@ -17,11 +17,14 @@ class Tarea extends Model
     ];
 
     // user_id no es fillable a propósito: siempre se asigna desde el usuario autenticado
-    protected $fillable = ['titulo', 'descripcion', 'estado', 'fecha_limite'];
+    protected $fillable = ['titulo', 'descripcion', 'estado', 'fecha_inicio', 'fecha_limite'];
 
     protected function casts(): array
     {
-        return ['fecha_limite' => 'date'];
+        return [
+            'fecha_inicio' => 'date',
+            'fecha_limite' => 'date',
+        ];
     }
 
     public function user(): BelongsTo

@@ -11,14 +11,77 @@ class TareaController extends Controller
 {
     public function index(Request $request)
     {
-        $tareas = $request->user()->tareas()->latest()->get();
+        $mes       = $this->mesSolicitado($request->query('mes'));
+        $inicioMes = $mes->copy()->startOfMonth();
+        $finMes    = $mes->copy()->endOfMonth();
+        $usuario   = $request->user();
 
-        return view('tareas.index', compact('tareas'));
+        // Tareas cuyo rango [inicio, fin] toca el mes visible
+        $delMes = $usuario->tareas()
+            ->whereNotNull('fecha_limite')
+            ->whereDate('fecha_limite', '>=', $inicioMes->toDateString())
+            ->where(function ($q) use ($finMes) {
+                $q->whereDate('fecha_inicio', '<=', $finMes->toDateString())
+                  ->orWhere(function ($q2) use ($finMes) {
+                      $q2->whereNull('fecha_inicio')
+                         ->whereDate('fecha_limite', '<=', $finMes->toDateString());
+                  });
+            })
+            ->orderBy('fecha_limite')
+            ->orderBy('titulo')
+            ->get();
+
+        $sinFecha = $usuario->tareas()->whereNull('fecha_limite')->latest()->get();
+
+        // Cada tarea se coloca en todos los días de su rango dentro del mes
+        $mapa = [];
+        foreach ($delMes as $tarea) {
+            $desde = ($tarea->fecha_inicio ?? $tarea->fecha_limite)->copy()->startOfDay()->max($inicioMes);
+            $hasta = $tarea->fecha_limite->copy()->startOfDay()->min($finMes->copy()->startOfDay());
+
+            for ($d = $desde->copy(); $d->lte($hasta); $d->addDay()) {
+                $mapa[$d->toDateString()][] = $tarea;
+            }
+        }
+        $porDia = collect($mapa)->map(fn ($lista) => collect($lista));
+
+        // Cuadrícula de semanas (lunes a domingo)
+        $semanas = [];
+        $dia     = $inicioMes->copy()->startOfWeek(Carbon::MONDAY);
+        $ultimo  = $finMes->copy()->endOfWeek(Carbon::SUNDAY);
+
+        while ($dia->lte($ultimo)) {
+            $semana = [];
+            for ($i = 0; $i < 7; $i++) {
+                $semana[] = [
+                    'fecha'  => $dia->copy(),
+                    'delMes' => $dia->month === $mes->month,
+                    'tareas' => $porDia->get($dia->toDateString(), collect()),
+                ];
+                $dia->addDay();
+            }
+            $semanas[] = $semana;
+        }
+
+        return view('tareas.index', [
+            'etiquetaMes' => ucfirst($mes->copy()->locale('es')->translatedFormat('F Y')),
+            'semanas'     => $semanas,
+            'delMes'      => $delMes,
+            'sinFecha'    => $sinFecha,
+            'total'       => $usuario->tareas()->count(),
+            'anterior'    => $mes->copy()->subMonth()->format('Y-m'),
+            'siguiente'   => $mes->copy()->addMonth()->format('Y-m'),
+        ]);
+    }
+
+    public function calendario(Request $request)
+    {
+        return $this->index($request);
     }
 
     public function create()
     {
-        return view('tareas.create');
+        return view('tareas.create', ['tarea' => null]);
     }
 
     public function store(TareaRequest $request)
@@ -26,6 +89,13 @@ class TareaController extends Controller
         $request->user()->tareas()->create($request->validated());
 
         return redirect()->route('tareas.index')->with('status', 'Tarea creada con éxito.');
+    }
+
+    public function show(Tarea $tarea)
+    {
+        $this->autorizar($tarea);
+
+        return view('tareas.show', compact('tarea'));
     }
 
     public function edit(Tarea $tarea)
@@ -51,55 +121,17 @@ class TareaController extends Controller
         return redirect()->route('tareas.index')->with('status', 'Tarea eliminada con éxito.');
     }
 
-        public function calendario(Request $request)
-    {
-        $mes = $this->mesSolicitado($request->query('mes'));
-
-        $tareas = $request->user()->tareas()
-            ->whereBetween('fecha_limite', [$mes->copy()->startOfMonth(), $mes->copy()->endOfMonth()])
-            ->orderBy('titulo')
-            ->get()
-            ->groupBy(fn ($tarea) => $tarea->fecha_limite->toDateString());
-
-        $dia = $mes->copy()->startOfMonth()->startOfWeek(Carbon::MONDAY);
-        $fin = $mes->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
-
-        $semanas = [];
-        while ($dia->lte($fin)) {
-            $semana = [];
-            for ($i = 0; $i < 7; $i++) {
-                $semana[] = [
-                    'fecha' => $dia->copy(),
-                    'delMes' => $dia->month === $mes->month,
-                    'tareas' => $tareas->get($dia->toDateString(), collect()),
-                ];
-                $dia->addDay();
-            }
-            $semanas[] = $semana;
-        }
-
-        return view('tareas.calendario', [
-            'mes' => $mes,
-            'semanas' => $semanas,
-            'anterior' => $mes->copy()->subMonth()->format('Y-m'),
-            'siguiente' => $mes->copy()->addMonth()->format('Y-m'),
-            'sinFecha' => $request->user()->tareas()->whereNull('fecha_limite')->count(),
-        ]);
-    }
-
-    // Acepta solo meses con formato AAAA-MM; si no es válido, usa el mes actual
-    private function mesSolicitado(?string $valor): Carbon
-    {
-        if ($valor && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $valor)) {
-            return Carbon::createFromFormat('Y-m-d', $valor . '-01')->startOfDay();
-        }
-
-        return now()->startOfMonth();
-    }
-
-    // Solo el dueño puede ver, editar o borrar su tarea
     private function autorizar(Tarea $tarea): void
     {
         abort_if($tarea->user_id !== auth()->id(), 403);
+    }
+
+    private function mesSolicitado(?string $mes): Carbon
+    {
+        if ($mes !== null && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $mes)) {
+            return Carbon::createFromFormat('!Y-m', $mes);
+        }
+
+        return now()->startOfMonth();
     }
 }

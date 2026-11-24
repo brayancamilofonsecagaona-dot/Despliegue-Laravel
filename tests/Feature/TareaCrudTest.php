@@ -17,6 +17,7 @@ class TareaCrudTest extends TestCase
             'titulo' => 'Estudiar pruebas',
             'descripcion' => 'Repasar PHPUnit',
             'estado' => 'pendiente',
+            'fecha_inicio' => '2026-11-20',
             'fecha_limite' => '2026-12-01',
         ], $cambios);
     }
@@ -118,13 +119,22 @@ class TareaCrudTest extends TestCase
             ->assertSessionHasErrors('fecha_limite');
     }
 
-    public function test_la_descripcion_y_la_fecha_son_opcionales(): void
+    public function test_la_descripcion_es_opcional(): void
     {
         $this->actingAs(User::factory()->create())
-            ->post(route('tareas.store'), $this->datos(['descripcion' => null, 'fecha_limite' => null]))
+            ->post(route('tareas.store'), $this->datos(['descripcion' => null]))
             ->assertSessionHasNoErrors();
 
         $this->assertDatabaseCount('tareas', 1);
+    }
+
+    public function test_las_fechas_son_obligatorias(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('tareas.store'), $this->datos(['fecha_inicio' => null, 'fecha_limite' => null]))
+            ->assertSessionHasErrors(['fecha_inicio', 'fecha_limite']);
+
+        $this->assertDatabaseCount('tareas', 0);
     }
 
     public function test_editar_muestra_el_formulario_con_los_datos(): void
