@@ -4,6 +4,7 @@ use App\Http\Controllers\RegisterController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RecuperacionController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\TareaController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -27,4 +28,12 @@ Route::get('/recuperacion', function() {
 })->name('password.request');
 Route::post('/recuperacion', [RecuperacionController::class, 'sendResetLinkEmail'])->name('password.email');
 Route::get('/reset-password/{token}', [RecuperacionController::class, 'showResetForm'])->name('password.reset');
-Route::post('/update-password', [RecuperacionController::class, 'updatePassword'])->name('password.update');//
+Route::post('/update-password', [RecuperacionController::class, 'updatePassword'])->name('password.update');
+
+Route::middleware('auth')->group(function () {
+    Route::middleware('auth')->group(function () {
+    Route::get('tareas/calendario', [TareaController::class, 'calendario'])->name('tareas.calendario');
+    Route::resource('tareas', TareaController::class)->except('show');
+    });
+    Route::resource('tareas', TareaController::class)->except('show');
+});
