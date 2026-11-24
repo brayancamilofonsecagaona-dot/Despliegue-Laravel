@@ -17,6 +17,9 @@
         <h1>Área privada</h1>
         <p>¡Bienvenido, <strong>{{ auth()->user()->name }}</strong>!</p>
         <p>Has iniciado sesión con el correo: {{ auth()->user()->email }}</p>
+
+        <p><a href="{{ route('tareas.index') }}">Mis tareas</a></p>
+
         <!-- Formato del boton de cierre de sesion -->
         <form method="POST" action="{{ route('logout') }}">
             @csrf
