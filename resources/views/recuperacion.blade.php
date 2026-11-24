@@ -1,4 +1,4 @@
-<DOCTYPE = html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -15,7 +15,7 @@
         button { margin-top: 20px; width: 100%; padding: 10px; background: #111; color: #fff; border: 0; border-radius: 6px; cursor: pointer; font-size: 1rem; }
         small { color: #666; }
     </style>
-    </head>
+</head>
 <body>
     <div class="card">
         <h1>Recuperar contraseña</h1>
@@ -23,11 +23,8 @@
         @if (session('status'))
             <div class="success">{{ session('status') }}</div>
         @endif
-        @error('email')
-           <div class="error">{{ $message }}</div>
-        @enderror
 
-        <form method="POST" action="/update-password" novalidate>
+        <form method="POST" action="{{ route('password.email') }}" novalidate>
             @csrf
 
             <label for="email">Correo electrónico</label>
@@ -36,4 +33,8 @@
 
             <button type="submit">Enviar enlace de recuperación</button>
         </form>
+
+        <p><small><a href="{{ route('login') }}">Volver a iniciar sesión</a></small></p>
     </div>
+</body>
+</html>

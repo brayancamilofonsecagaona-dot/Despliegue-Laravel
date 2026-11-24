@@ -10,10 +10,11 @@ class TareaFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
-            'titulo' => fake()->sentence(3),
-            'descripcion' => fake()->sentence(),
-            'estado' => 'pendiente',
+            'user_id'      => User::factory(),
+            'titulo'       => fake()->sentence(3),
+            'descripcion'  => fake()->sentence(),
+            'estado'       => 'pendiente',
+            'fecha_inicio' => null,
             'fecha_limite' => null,
         ];
     }
